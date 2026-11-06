@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!--
+  Markital Business Hub - Version 1
+  ---------------------------------
+  This is the ONLY page of the app. It contains the layout (sidebar, the
+  four sections, and the "task form" pop-up). JavaScript files at the bottom
+  fill the sections with data.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markital Business Hub</title>
+  <meta name="description" content="Markital Business Hub - a simple dashboard for clients, projects and tasks." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- ===================== SIDEBAR (left menu) ===================== -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">M</div>
+        <div>
+          <div class="brand-name">Markital</div>
+          <div class="brand-sub">Business Hub</div>
+        </div>
+      </div>
+
+      <!-- Each button has data-section="..." that matches a <section id="section-..."> below -->
+      <nav class="nav" aria-label="Main menu">
+        <button class="nav-link" data-section="overview">
+          <span class="nav-icon" aria-hidden="true">◧</span> Overview
+        </button>
+        <button class="nav-link" data-section="clients">
+          <span class="nav-icon" aria-hidden="true">◎</span> Clients
+        </button>
+        <button class="nav-link" data-section="projects">
+          <span class="nav-icon" aria-hidden="true">▤</span> Projects
+        </button>
+        <button class="nav-link" data-section="tasks">
+          <span class="nav-icon" aria-hidden="true">✓</span> Tasks
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p class="storage-note">
+          <strong>Saved in this browser only.</strong>
+          Tasks are stored on this device (localStorage). Teammates cannot see them.
+        </p>
+        <button class="btn btn-ghost btn-small" id="resetDemoBtn" type="button">Reset demo data</button>
+      </div>
+    </aside>
+
+    <!-- ===================== MAIN AREA ===================== -->
+    <main class="main">
+
+      <header class="topbar">
+        <div>
+          <h1 class="page-title" id="pageTitle">Overview</h1>
+          <p class="page-subtitle" id="pageSubtitle">Your business at a glance</p>
+        </div>
+        <button class="btn btn-primary" id="newTaskBtn" type="button">+ New Task</button>
+      </header>
+
+      <!-- Shown only if the browser blocks localStorage (e.g. some private modes) -->
+      <div class="banner banner-warning" id="storageWarning" hidden>
+        This browser is not allowing data to be saved. Changes will be lost when you close the page.
+      </div>
+
+      <!-- ---------- SECTION 1: OVERVIEW ---------- -->
+      <section class="section" id="section-overview" aria-labelledby="pageTitle">
+        <div class="stats-grid" id="statsGrid"><!-- filled by JavaScript --></div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Upcoming &amp; overdue</h2>
+              <a href="#tasks" class="link">View all tasks →</a>
+            </div>
+            <ul class="deadline-list" id="deadlineList"></ul>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Progress</h2>
+            </div>
+            <div id="progressPanel"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- SECTION 2: CLIENTS ---------- -->
+      <section class="section" id="section-clients" hidden>
+        <div class="card-grid" id="clientGrid"></div>
+      </section>
+
+      <!-- ---------- SECTION 3: PROJECTS ---------- -->
+      <section class="section" id="section-projects" hidden>
+        <div class="card-grid" id="projectGrid"></div>
+      </section>
+
+      <!-- ---------- SECTION 4: TASKS ---------- -->
+      <section class="section" id="section-tasks" hidden>
+        <div class="panel">
+          <!-- Filter bar -->
+          <div class="filters">
+            <input type="search" id="filterSearch" class="input" placeholder="Search tasks…" aria-label="Search tasks" />
+            <select id="filterClient" class="input" aria-label="Filter by client"></select>
+            <select id="filterProject" class="input" aria-label="Filter by project"></select>
+            <select id="filterStatus" class="input" aria-label="Filter by status">
+              <option value="All">All statuses</option>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+              <option value="Overdue">Overdue</option>
+            </select>
+            <select id="filterPriority" class="input" aria-label="Filter by priority">
+              <option value="All">All priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <button class="btn btn-ghost btn-small" id="clearFiltersBtn" type="button">Clear filters</button>
+          </div>
+
+          <p class="result-count" id="resultCount"></p>
+
+          <div class="table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Client</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Due date</th>
+                  <th>Status</th>
+                  <th><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="taskTableBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="taskEmpty" hidden>No tasks match your filters.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================== TASK FORM POP-UP ===================== -->
+  <!-- <dialog> is a built-in HTML pop-up window. JavaScript opens and closes it. -->
+  <dialog class="modal" id="taskDialog" aria-labelledby="dialogTitle">
+    <form id="taskForm" novalidate>
+      <div class="modal-head">
+        <h2 id="dialogTitle">New Task</h2>
+        <button type="button" class="icon-btn" id="closeDialogBtn" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Hidden field: holds the task's id when editing (empty for a new task) -->
+      <input type="hidden" id="taskId" />
+
+      <div class="form-grid">
+        <label class="field">
+          <span>Client Name *</span>
+          <input class="input" id="clientName" list="clientOptions" required maxlength="80" />
+          <datalist id="clientOptions"></datalist>
+        </label>
+
+        <label class="field">
+          <span>Project Name *</span>
+          <input class="input" id="projectName" list="projectOptions" required maxlength="80" />
+          <datalist id="projectOptions"></datalist>
+        </label>
+
+        <label class="field field-full">
+          <span>Task Title *</span>
+          <input class="input" id="taskTitle" required maxlength="120" />
+        </label>
+
+        <label class="field field-full">
+          <span>Description</span>
+          <textarea class="input" id="taskDescription" rows="3" maxlength="1000"></textarea>
+        </label>
+
+        <label class="field">
+          <span>Priority</span>
+          <select class="input" id="taskPriority">
+            <option>High</option>
+            <option selected>Medium</option>
+            <option>Low</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Due Date *</span>
+          <input class="input" type="date" id="taskDueDate" required />
+        </label>
+
+        <label class="field">
+          <span>Status</span>
+          <select class="input" id="taskStatus">
+            <option selected>To Do</option>
+            <option>In Progress</option>
+            <option>Done</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="form-error" id="formError" role="alert" hidden></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelDialogBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Small pop-up message at the bottom of the screen ("Task saved", etc.) -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!--
+    JavaScript files. ORDER MATTERS: each file can use things from the files
+    loaded before it. app.js is last because it uses all the others.
+  -->
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
